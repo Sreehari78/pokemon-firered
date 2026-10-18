@@ -1399,12 +1399,9 @@ static void DoCB1_Overworld(u16 newKeys, u16 heldKeys)
 {
     struct FieldInput fieldInput;
 
-    // #if ASYM_NET
-        if (newKeys & SELECT_BUTTON)
-        {
-            AsymNet_SendPing();
-        }
-    // #endif
+    // --- MY ROM HACK CHANGE ---
+    AsymNet_SendPing();
+    // --------------------------
 
     QL_TryRunActions();
     UpdatePlayerAvatarTransitionState();

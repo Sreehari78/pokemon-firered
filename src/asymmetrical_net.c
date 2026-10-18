@@ -8,7 +8,7 @@
 #include "field_player_avatar.h"
 
 // THE BUILD TOGGLE: 
-#define IS_PLAYER_1 0
+#define IS_PLAYER_1 1
 
 // The global struct where Player 2 will store the incoming data
 struct TelemetryData gP1Telemetry;
@@ -33,27 +33,29 @@ void AsymNet_SendPing(void)
 {
     if (IS_PLAYER_1) 
     {
-        // 1. Grab Player 1's current live variables from the engine
-        u8 mapGroup = gSaveBlock1Ptr->location.mapGroup;
-        u8 mapNum   = gSaveBlock1Ptr->location.mapNum;
-        
-        // The player avatar is technically an "Object Event" in the engine
-        struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
-        u8 x   = playerObj->currentCoords.x;
-        u8 y   = playerObj->currentCoords.y;
-        u8 dir = playerObj->facingDirection;
+        // SAFETY CHECK: Ensure the hardware is not currently busy sending a previous packet
+        if (!(REG_SIOCNT & 0x0080)) 
+        {
+            u8 mapGroup = gSaveBlock1Ptr->location.mapGroup;
+            u8 mapNum   = gSaveBlock1Ptr->location.mapNum;
+            
+            struct ObjectEvent *playerObj = &gObjectEvents[gPlayerAvatar.objectEventId];
+            u8 x   = playerObj->currentCoords.x;
+            u8 y   = playerObj->currentCoords.y;
+            u8 dir = playerObj->facingDirection;
 
-        // 2. Smash them together into a single 32-bit packet using bit shifting
-        u32 packet = 0;
-        packet |= (dir & 0x7);                 // Bits 0-2
-        packet |= ((y & 0xFF) << 3);           // Bits 3-10
-        packet |= ((x & 0xFF) << 11);          // Bits 11-18
-        packet |= ((mapNum & 0x7F) << 19);     // Bits 19-25
-        packet |= ((mapGroup & 0x3F) << 26);   // Bits 26-31
+            u32 packet = 0;
+            packet |= (dir & 0x7);                 
+            packet |= ((y & 0xFF) << 3);           
+            packet |= ((x & 0xFF) << 11);          
+            packet |= ((mapNum & 0x7F) << 19);     
+            packet |= ((mapGroup & 0x3F) << 26);   
 
-        // 3. Fire the packet down the wire
-        REG_SIODATA32 = packet;
-        REG_SIOCNT |= 0x0080;
+            REG_SIODATA32 = packet;
+            
+            // Start the transfer
+            REG_SIOCNT |= 0x0080;
+        }
     }
 }
 
